@@ -1,13 +1,13 @@
 <?php
 /**
  * Plugin Name:       Plugin Report
- * Plugin URI:        https://roytanck.com/?p=277
+ * Plugin URI:        https://wordpress.org/plugins/plugin-report/
  * Description:       Provides detailed information about currently installed plugins
- * Version:           2.1.1
+ * Version:           2.2.0
  * Requires at least: 4.6
  * Requires PHP:      5.6
- * Author:            Roy Tanck
- * Author URI:        https://roytanck.com
+ * Author:            Torsten Landsiedel
+ * Author URI:        https://torstenlandsiedel.de
  * License:           GPLv3
  * Network:           true
  */
@@ -31,7 +31,7 @@ if ( is_admin() && ! class_exists( 'RT_Plugin_Report' ) ) {
 		const CSS_CLASS_HIGH = 'pr-risk-high';
 
 		// Other class constants.
-		const PLUGIN_VERSION        = '2.1.1';
+		const PLUGIN_VERSION        = '2.2.0';
 		const COLS_PER_ROW          = 9;
 		const CACHE_LIFETIME        = DAY_IN_SECONDS;
 		const CACHE_LIFETIME_NOREPO = WEEK_IN_SECONDS;
@@ -70,7 +70,7 @@ if ( is_admin() && ! class_exists( 'RT_Plugin_Report' ) ) {
 			add_plugins_page(
 				esc_html_x( 'Plugin Report', 'Page and menu title', 'plugin-report' ),
 				esc_html_x( 'Plugin Report', 'Page and menu title', 'plugin-report' ),
-				'manage_options',
+				is_multisite() ? 'manage_sites' : 'manage_options',
 				'plugin_report',
 				array( $this, 'settings_page' )
 			);
@@ -108,7 +108,7 @@ if ( is_admin() && ! class_exists( 'RT_Plugin_Report' ) ) {
 			echo '<p>';
 			$version_temp = '<span class="' . $this->get_version_risk_classname( $wp_version, $wp_latest ) . '">' . $wp_version . '</span>';
 			/* translators: %1$s: Current WordPress version number, %2$s: Current PHP version number */
-			echo sprintf( __( 'Currently running WordPress version %1$s and PHP version %2$s.', 'plugin-report' ), $version_temp, phpversion() );
+			echo sprintf( esc_html__( 'Currently running WordPress version %1$s and PHP version %2$s.', 'plugin-report' ), $version_temp, phpversion() );
 			if ( version_compare( $wp_version, $wp_latest, '<' ) ) {
 				/* translators: %s = Available new version number */
 				echo sprintf( ' (' . esc_html__( 'An upgrade to %s is available', 'plugin-report' ) . ')', $wp_latest );
@@ -121,11 +121,10 @@ if ( is_admin() && ! class_exists( 'RT_Plugin_Report' ) ) {
 			} else {
 				$page_url = 'plugins.php?page=plugin_report';
 			}
-			echo '<a href="' . admin_url( $page_url . '&clear_cache=' . current_time( 'timestamp' ) ) . '">' . esc_html__( 'Clear cached plugin data and reload', 'plugin-report' ) . '</a>';
+			echo '<a href="' . esc_attr( admin_url( $page_url . '&clear_cache=' . current_time( 'timestamp' ) ) ) . '">' . esc_html__( 'Clear cached plugin data and reload', 'plugin-report' ) . '</a>';
 			echo '</p>';
-			echo '<h3>' . esc_html__( 'Currently installed plugins', 'plugin-report' ) . '</h3>';
+			echo '<h2>' . esc_html__( 'Currently installed plugins', 'plugin-report' ) . '</h2>';
 			echo '<p id="plugin-report-progress"></p>';
-			echo '<p>';
 
 			// The report's main table.
 			echo '<table id="plugin-report-table" class="wp-list-table widefat fixed striped">';
@@ -153,13 +152,12 @@ if ( is_admin() && ! class_exists( 'RT_Plugin_Report' ) ) {
 					echo $this->render_table_row( $cache );
 				} else {
 					// Render a special table row that's used as a signal to the front-end js that new data is needed.
-					echo '<tr class="plugin-report-row-temp-' . $slug . '"><td colspan="' . self::COLS_PER_ROW . '">' . esc_html__( 'Loading...', 'plugin-report' ) . '</td></tr>';
+					echo '<tr class="plugin-report-row-temp-' . esc_attr( $slug ) . '"><td colspan="' . (int) self::COLS_PER_ROW . '">' . esc_html__( 'Loading...', 'plugin-report' ) . '</td></tr>';
 				}
 			}
 
 			echo '</tbody>';
 			echo '</table>';
-			echo '</p>';
 
 			echo '<p id="plugin-report-buttons"></p>';
 
@@ -180,9 +178,9 @@ if ( is_admin() && ! class_exists( 'RT_Plugin_Report' ) ) {
 			}
 			// Register the plugin's admin js, and require jquery.
 			wp_enqueue_script( 'plugin-report-js', plugins_url( '/js/plugin-report.js', __FILE__ ), array( 'jquery', 'plugin-report-tablesort-js' ), self::PLUGIN_VERSION );
-			wp_enqueue_script( 'plugin-report-tablesort-js', plugins_url( '/js/tablesort.min.js', __FILE__ ), array( 'jquery' ), '5.3' );
-			wp_enqueue_script( 'plugin-report-tablesort-number-js', plugins_url( '/js/tablesort.number.min.js', __FILE__ ), array( 'plugin-report-tablesort-js' ), '5.3' );
-			wp_enqueue_script( 'plugin-report-tablesort-dotsep-js', plugins_url( '/js/tablesort.dotsep.min.js', __FILE__ ), array( 'plugin-report-tablesort-js' ), '5.3' );
+			wp_enqueue_script( 'plugin-report-tablesort-js', plugins_url( '/js/tablesort.min.js', __FILE__ ), array( 'jquery' ), '5.6.0' );
+			wp_enqueue_script( 'plugin-report-tablesort-number-js', plugins_url( '/js/tablesort.number.min.js', __FILE__ ), array( 'plugin-report-tablesort-js' ), '5.6.0' );
+			wp_enqueue_script( 'plugin-report-tablesort-dotsep-js', plugins_url( '/js/tablesort.dotsep.min.js', __FILE__ ), array( 'plugin-report-tablesort-js' ), '5.6.0' );
 			// Add some variables to the page, to be used by the javascript.
 			$slugs     = $this->get_plugin_slugs();
 			$slugs_str = implode( ',', $slugs );
@@ -245,10 +243,14 @@ if ( is_admin() && ! class_exists( 'RT_Plugin_Report' ) ) {
 
 			// Check if get_plugins() function exists.
 			if ( ! function_exists( 'plugins_api' ) ) {
-				require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
+				require_once get_home_path() . 'wp-admin/includes/plugin-install.php';
 			}
 
-			$slug = sanitize_title( $_POST['slug'] );
+			if ( isset( $_POST['slug'] ) ) {
+				$slug = sanitize_title( wp_unslash( $_POST['slug'] ) );
+			} else {
+				$slug = ''; // Set value to an empty string.
+			}
 
 			$report = $this->assemble_plugin_report( $slug );
 
@@ -315,7 +317,7 @@ if ( is_admin() && ! class_exists( 'RT_Plugin_Report' ) ) {
 
 							$report['local_info']  = $plugin;
 							$report['file_path']   = $key;
-							$report['auto-update'] = in_array( $key, $auto_updates );
+							$report['auto-update'] = in_array( $key, $auto_updates, true );
 
 							// Change any whitespace to default space.
 							$report['local_info']['Name'] = preg_replace( '/\s+/u', ' ', $report['local_info']['Name'] );
@@ -342,7 +344,7 @@ if ( is_admin() && ! class_exists( 'RT_Plugin_Report' ) ) {
 
 					// Check wordpress.org only if "Update URI" plugin header is not set or set to wordpress.org.
 					$parsed_repo_url = wp_parse_url( $report['local_info']['UpdateURI'] );
-					$repo_host = isset( $parsed_repo_url['host'] ) ? $parsed_repo_url['host'] : null;
+					$repo_host       = isset( $parsed_repo_url['host'] ) ? $parsed_repo_url['host'] : null;
 					if ( empty( $repo_host ) || strtolower( $repo_host ) === 'w.org' || strtolower( $repo_host ) === 'wordpress.org' ) {
 						$returned_object = plugins_api( 'plugin_information', $args );
 					}
@@ -350,7 +352,7 @@ if ( is_admin() && ! class_exists( 'RT_Plugin_Report' ) ) {
 					// Add the repo info to the report.
 					if ( isset( $returned_object ) ) {
 						if ( ! is_wp_error( $returned_object ) ) {
-							$report['repo_info'] = maybe_unserialize( $returned_object );
+							$report['repo_info'] = $returned_object;
 							// Cache the report.
 							set_site_transient( $cache_key, $report, self::CACHE_LIFETIME );
 						} else {
@@ -378,24 +380,24 @@ if ( is_admin() && ! class_exists( 'RT_Plugin_Report' ) ) {
 
 		/**
 		 * Check if the plugin is present in WordPress's SVN repository.
-		 * 
+		 *
 		 * Function adapted from the 'Enhanced Plugin Admin' plugin by Marios Alexandrou.
 		 * See: https://plugins.trac.wordpress.org/browser/enhanced-plugin-admin/trunk/enhanced-plugin-admin.php
-		 * 
+		 *
 		 * @param string $slug The plugin's slug.
-		 * 
+		 *
 		 * @return boolean True if found, false if not.
 		 */
 		private function check_exists_in_svn( $slug ) {
 			// Attempt to load the plugin's SVN repo page.
-			$response = wp_remote_get( "http://svn.wp-plugins.org/" . $slug . "/" );
+			$response = wp_remote_get( 'http://svn.wp-plugins.org/' . $slug . '/' );
 			// If the return value was a WP_Error, assume the answer is no.
-			if( is_wp_error( $response ) ) {
+			if ( is_wp_error( $response ) ) {
 				return false;
 			} else {
 				// If the returned HTTP code is 200, the page was found, so return true.
 				$response_code = wp_remote_retrieve_response_code( $response );
-				if( '200' == $response_code ) {
+				if ( 200 === $response_code ) {
 					return true;
 				}
 			}
@@ -407,7 +409,7 @@ if ( is_admin() && ! class_exists( 'RT_Plugin_Report' ) ) {
 		/**
 		 * From a report, generate an HTML table row with relevant data for the plugin.
 		 *
-		 * @param array $report Report of plugin.
+		 * @param array|false $report Report of plugin.
 		 */
 		private function render_table_row( $report ) {
 			// Get the current WP version number.
@@ -415,7 +417,7 @@ if ( is_admin() && ! class_exists( 'RT_Plugin_Report' ) ) {
 			// Get the latest WP release version number.
 			$wp_latest = $this->check_core_updates();
 			// Check if the report is valid.
-			if ( null === $report ) {
+			if ( false === $report ) {
 				$html = $this->render_error_row( esc_html__( 'No plugin data available.', 'plugin-report' ) );
 			} else {
 				// Start the new table row.
@@ -446,7 +448,7 @@ if ( is_admin() && ! class_exists( 'RT_Plugin_Report' ) ) {
 						// Plugin should be available on wp.org, check if we got a 'not found' error.
 						if ( isset( $report['repo_error_code'] ) && $report['repo_error_code'] === 'plugins_api_failed' ) {
 							// Plugin is not available in the wp.org repo.
-							if( isset( $report['exists_in_svn'] ) && $report['exists_in_svn'] === true ) {
+							if ( isset( $report['exists_in_svn'] ) && $report['exists_in_svn'] === true ) {
 								$html .= '<td class="' . self::CSS_CLASS_HIGH . '">' . __( 'wordpress.org, plugin closed', 'plugin-report' ) . '</td>';
 							} else {
 								$html .= '<td class="' . self::CSS_CLASS_HIGH . '">' . __( 'wordpress.org, plugin not found', 'plugin-report' ) . '</td>';
@@ -456,7 +458,7 @@ if ( is_admin() && ! class_exists( 'RT_Plugin_Report' ) ) {
 							$html .= '<td class="' . self::CSS_CLASS_LOW . '">wordpress.org</td>';
 						}
 					} else {
-						if ( $parsed_repo_url && isset( $parsed_repo_url[ 'host' ] ) ) {
+						if ( $parsed_repo_url && isset( $parsed_repo_url['host'] ) ) {
 							// Update URI is a valid URL, display the host.
 							$html .= '<td class="' . self::CSS_CLASS_MED . '">' . $repo_host . '</td>';
 						} else {
@@ -464,7 +466,7 @@ if ( is_admin() && ! class_exists( 'RT_Plugin_Report' ) ) {
 							$html .= '<td class="' . self::CSS_CLASS_MED . '">' . __( 'Updates disabled', 'plugin-report' ) . '</td>';
 						}
 					}
-				} else if ( version_compare( $wp_version, '5.8', '<' ) ) {
+				} elseif ( version_compare( $wp_version, '5.8', '<' ) ) {
 					$html .= $this->render_error_cell( esc_html__( 'Only available in WP 5.8+', 'plugin-report' ) );
 				} else {
 					$html .= $this->render_error_cell();
@@ -541,7 +543,7 @@ if ( is_admin() && ! class_exists( 'RT_Plugin_Report' ) ) {
 				}
 
 				// Tested up to.
-				if ( isset( $report['repo_info'] ) && isset( $report['repo_info']->tested ) ) {
+				if ( isset( $report['repo_info'] ) && isset( $report['repo_info']->tested ) && ! empty( $report['repo_info']->tested ) ) {
 					$css_class = $this->get_version_risk_classname( $report['repo_info']->tested, $wp_latest, true );
 					$html     .= '<td class="' . $css_class . '">' . $report['repo_info']->tested . '</td>';
 				} else {
@@ -583,7 +585,7 @@ if ( is_admin() && ! class_exists( 'RT_Plugin_Report' ) ) {
 			if ( ! $message ) {
 				$message = esc_html__( 'No data available', 'plugin-report' );
 			}
-			return '<td class="pluginreport-cell-error">' . $message . '</td>';
+			return '<td class="pluginreport-cell-error" data-sort="0">' . $message . '</td>';
 		}
 
 
@@ -641,7 +643,7 @@ if ( is_admin() && ! class_exists( 'RT_Plugin_Report' ) ) {
 		/**
 		 * Assess the risk associated with low ratings or poor compatibility feedback, return corresponding CSS class.
 		 *
-		 * @param string $time_diff   Time difference.
+		 * @param int $time_diff   Time difference in seconds.
 		 */
 		private function get_timediff_risk_classname( $time_diff ) {
 			$days = $time_diff / ( DAY_IN_SECONDS );
@@ -663,15 +665,15 @@ if ( is_admin() && ! class_exists( 'RT_Plugin_Report' ) ) {
 			global $wp_version;
 			$update = get_preferred_from_update_core();
 			// Bail out of no valid response, or false.
-			if ( ! $update || false === $update ) {
+			if ( false === $update ) {
 				return $wp_version;
 			}
 			// If latest, return current version number.
-			if ( 'latest' === $update->response ) {
+			if ( is_object( $update ) && 'latest' === $update->response ) {
 				return $wp_version;
 			}
 			// Return the preferred update's version number.
-			return $update->version;
+			return is_object( $update ) ? $update->version : $update['version'];
 		}
 
 
@@ -752,10 +754,8 @@ if ( is_admin() && ! class_exists( 'RT_Plugin_Report' ) ) {
 		 * @param string $slug   Plugin slug.
 		 */
 		private function clear_cache_item( $slug ) {
-			if ( isset( $slug ) ) {
-				$cache_key = $this->create_cache_key( $slug );
-				delete_site_transient( $cache_key );
-			}
+			$cache_key = $this->create_cache_key( $slug );
+			delete_site_transient( $cache_key );
 		}
 
 
