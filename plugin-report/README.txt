@@ -2,9 +2,9 @@
 Contributors: roytanck, zodiac1978, pedromendonca, apermo
 Tags: plugin info, admin, plugins, multisite
 Requires at least: 4.6
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 5.6
-Stable tag: 2.2.3
+Stable tag: 2.2.4
 License: GPLv3
 
 A WordPress plugin that provides detailed information about currently installed plugins.
@@ -23,6 +23,10 @@ A WordPress plugin that provides detailed information about currently installed 
 
 The development of this plugin happens on [GitHub](https://github.com/Zodiac1978/plugin-report). Feel free to [submit issues](https://github.com/Zodiac1978/plugin-report/issues) there.
 
+= Where do I report security bugs found in this plugin? =
+
+Please report security bugs found in the source code of the Plugin Report plugin through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/612c50f1-70b0-43bb-b8f8-8c58f88ea196). The Patchstack team will assist you with verification, CVE assignment, and notify the developer of this plugin. 
+
 
 == Screenshots ==
  
@@ -37,6 +41,19 @@ Special thanks go to [Tristen Forsythe Brown](http://tristen.ca/) for the [table
 
 
 == Changelog ==
+
+= 2.2.4 (2026-08-15) =
+* Tested up to WordPress 7.1
+* Added WPCS, typo, and Plugin Check checks to the CI workflow
+* Fixed typos and WordPress Coding Standards warnings
+* Added information about the Patchstack managed Vulnerability Disclosure Program (mVDP)
+* Removed a redundant update-data check identified by PHPStan
+* Hardened cache-clear request validation and sanitization
+* Switched AJAX plugin-info responses to wp_send_json()
+* Fixed compatibility highlighting for WordPress beta and RC releases
+* Added an orange compatibility warning and a help tab explaining the color thresholds
+* Prevented invalid plugin repository data without a version from being cached or accessed (thanks, @apermo)
+* Added graceful handling for failed or malformed AJAX requests (thanks, @apermo)
 
 = 2.2.3 (2026-05-31) =
 * Tested up to WordPress 7.0
@@ -140,7 +157,7 @@ Special thanks go to [Tristen Forsythe Brown](http://tristen.ca/) for the [table
 
 = 1.2 (2019-11-26) =
 * Removed the "compatibility" column (data no longer provided by API)
-* Fixed an issue with long plugin slugs causing invalide transient keys
+* Fixed an issue with long plugin slugs causing invalid transient keys
 * Fixed an issue where version number colors were inconsistent
 
 = 1.1 (2019-11-23) =
